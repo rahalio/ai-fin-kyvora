@@ -1,0 +1,905 @@
+openapi: 3.0.3
+info:
+  title: Kyvora
+  version: 0.1.0
+  description: >-
+    Bank-consortium reusable KYC attribute exchange. Identity providers issue
+    consent-gated, assurance-levelled attestations to relying parties with
+    explicit liability allocation and Identity-as-a-Service settlement.
+  x-product-slug: ai-fin-kyvora
+  x-source: ai-in-financial/WEF_A_Blueprint_for_Digital_Identity/
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Directory
+    description: IdP and RP membership, certification, and suspension
+  - name: Subjects
+    description: Identity subjects and verified attributes
+  - name: Consents
+    description: Purpose-limited consent grants and revocations
+  - name: Attestations
+    description: Assurance-levelled attestation issuance and exchange
+  - name: Screening
+    description: Sanctions and PEP screening freshness
+  - name: Disputes
+    description: Incorrect-attribute disputes and freezes
+  - name: Settlement
+    description: Identity-as-a-Service fees and invoices
+paths:
+  /v1/directory/identity-providers:
+    get:
+      operationId: listIdentityProviders
+      tags: [Directory]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, suspended, pending]
+      responses:
+        "200":
+          description: Identity providers page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeIdentityProvider"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: registerIdentityProvider
+      tags: [Directory]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityProviderCreate"
+      responses:
+        "201":
+          description: IdP registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeIdentityProvider"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /v1/directory/relying-parties:
+    get:
+      operationId: listRelyingParties
+      tags: [Directory]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Relying parties page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeRelyingParty"
+    post:
+      operationId: registerRelyingParty
+      tags: [Directory]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RelyingPartyCreate"
+      responses:
+        "201":
+          description: RP registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeRelyingParty"
+  /v1/directory/identity-providers/{idpId}/suspend:
+    parameters:
+      - $ref: "#/components/parameters/IdpId"
+    post:
+      operationId: suspendIdentityProvider
+      tags: [Directory]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+      responses:
+        "202":
+          description: Suspension accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeIdentityProvider"
+  /v1/subjects/{subjectId}/attributes:
+    parameters:
+      - $ref: "#/components/parameters/SubjectId"
+    get:
+      operationId: listSubjectAttributes
+      tags: [Subjects]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Verified attributes for subject
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeAttributeRecord"
+    post:
+      operationId: registerSubjectAttribute
+      tags: [Subjects]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttributeRecordCreate"
+      responses:
+        "201":
+          description: Attribute registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeAttributeRecord"
+  /v1/consents:
+    post:
+      operationId: createConsentGrant
+      tags: [Consents]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsentGrantCreate"
+      responses:
+        "201":
+          description: Consent granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeConsentGrant"
+  /v1/consents/{consentId}/revoke:
+    parameters:
+      - $ref: "#/components/parameters/ConsentId"
+    post:
+      operationId: revokeConsentGrant
+      tags: [Consents]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Consent revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeConsentGrant"
+  /v1/attestations:
+    get:
+      operationId: listAttestations
+      tags: [Attestations]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [issued, refused, expired, revoked, disputed]
+      responses:
+        "200":
+          description: Attestations page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeAttestation"
+    post:
+      operationId: requestAttestation
+      tags: [Attestations]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttestationRequest"
+      responses:
+        "201":
+          description: Attestation issued or refused
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeAttestation"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /v1/attestations/{attestationId}:
+    parameters:
+      - $ref: "#/components/parameters/AttestationId"
+    get:
+      operationId: getAttestation
+      tags: [Attestations]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Attestation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeAttestation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/screening/snapshots:
+    post:
+      operationId: refreshScreeningSnapshot
+      tags: [Screening]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScreeningSnapshotCreate"
+      responses:
+        "201":
+          description: Screening snapshot captured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeScreeningSnapshot"
+  /v1/disputes:
+    get:
+      operationId: listDisputeCases
+      tags: [Disputes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Disputes page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeDisputeCase"
+    post:
+      operationId: openDisputeCase
+      tags: [Disputes]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisputeCaseCreate"
+      responses:
+        "201":
+          description: Dispute opened and dependent onboardings frozen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeDisputeCase"
+  /v1/settlement/invoices:
+    get:
+      operationId: listSettlementInvoices
+      tags: [Settlement]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Invoices page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeSettlementInvoice"
+  /v1/settlement/fee-schedules:
+    post:
+      operationId: upsertFeeSchedule
+      tags: [Settlement]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeeSchedule"
+      responses:
+        "201":
+          description: Fee schedule saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeFeeSchedule"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+    IdpId:
+      name: idpId
+      in: path
+      required: true
+      schema: { type: string }
+    SubjectId:
+      name: subjectId
+      in: path
+      required: true
+      schema: { type: string }
+    ConsentId:
+      name: consentId
+      in: path
+      required: true
+      schema: { type: string }
+    AttestationId:
+      name: attestationId
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: Not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    UnprocessableEntity:
+      description: Validation failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+  schemas:
+
+    ResponseMeta:
+      type: object
+      required: [requestId, timestamp]
+      properties:
+        requestId: { type: string }
+        timestamp: { type: string, format: date-time }
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+
+    IdentityProvider:
+      type: object
+      required: [id, legalName, status, maxAssuranceLevel]
+      properties:
+        id: { type: string }
+        legalName: { type: string }
+        status:
+          type: string
+          enum: [active, suspended, pending]
+        maxAssuranceLevel:
+          type: string
+          enum: [IAL1, IAL2, IAL3]
+        jurisdictions:
+          type: array
+          items: { type: string }
+    IdentityProviderCreate:
+      type: object
+      required: [legalName, maxAssuranceLevel]
+      properties:
+        legalName: { type: string }
+        maxAssuranceLevel:
+          type: string
+          enum: [IAL1, IAL2, IAL3]
+        jurisdictions:
+          type: array
+          items: { type: string }
+    RelyingParty:
+      type: object
+      required: [id, legalName, status, allowedPurposes]
+      properties:
+        id: { type: string }
+        legalName: { type: string }
+        status:
+          type: string
+          enum: [active, suspended, pending]
+        allowedPurposes:
+          type: array
+          items: { type: string }
+    RelyingPartyCreate:
+      type: object
+      required: [legalName, allowedPurposes]
+      properties:
+        legalName: { type: string }
+        allowedPurposes:
+          type: array
+          items: { type: string }
+    IdentitySubject:
+      type: object
+      required: [id, subjectType]
+      properties:
+        id: { type: string }
+        subjectType:
+          type: string
+          enum: [individual, legalEntity]
+        displayRef: { type: string }
+    AttributeRecord:
+      type: object
+      required: [id, subjectId, name, assuranceLevel, verifiedAt]
+      properties:
+        id: { type: string }
+        subjectId: { type: string }
+        name: { type: string }
+        valueHash: { type: string }
+        assuranceLevel:
+          type: string
+          enum: [IAL1, IAL2, IAL3]
+        verifiedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+    AttributeRecordCreate:
+      type: object
+      required: [name, value, assuranceLevel]
+      properties:
+        name: { type: string }
+        value: { type: string }
+        assuranceLevel:
+          type: string
+          enum: [IAL1, IAL2, IAL3]
+        expiresAt: { type: string, format: date-time }
+    AssuranceLevel:
+      type: object
+      required: [code, description]
+      properties:
+        code:
+          type: string
+          enum: [IAL1, IAL2, IAL3]
+        description: { type: string }
+    ConsentGrant:
+      type: object
+      required: [id, subjectId, relyingPartyId, purpose, status, grantedAt]
+      properties:
+        id: { type: string }
+        subjectId: { type: string }
+        relyingPartyId: { type: string }
+        purpose: { type: string }
+        attributeNames:
+          type: array
+          items: { type: string }
+        status:
+          type: string
+          enum: [active, revoked, expired]
+        grantedAt: { type: string, format: date-time }
+        revokedAt: { type: string, format: date-time }
+    ConsentGrantCreate:
+      type: object
+      required: [subjectId, relyingPartyId, purpose, attributeNames]
+      properties:
+        subjectId: { type: string }
+        relyingPartyId: { type: string }
+        purpose: { type: string }
+        attributeNames:
+          type: array
+          items: { type: string }
+    LiabilityAllocation:
+      type: object
+      required: [bearer, ruleRef]
+      properties:
+        bearer:
+          type: string
+          enum: [identityProvider, relyingParty, subject]
+        ruleRef: { type: string }
+        notes: { type: string }
+    Attestation:
+      type: object
+      required: [id, subjectId, identityProviderId, relyingPartyId, assuranceLevel, status, liability, issuedAt]
+      properties:
+        id: { type: string }
+        subjectId: { type: string }
+        identityProviderId: { type: string }
+        relyingPartyId: { type: string }
+        purpose: { type: string }
+        attributeNames:
+          type: array
+          items: { type: string }
+        assuranceLevel:
+          type: string
+          enum: [IAL1, IAL2, IAL3]
+        status:
+          type: string
+          enum: [issued, refused, expired, revoked, disputed]
+        liability:
+          $ref: "#/components/schemas/LiabilityAllocation"
+        screeningSnapshotId: { type: string }
+        consentId: { type: string }
+        issuedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        refuseReason: { type: string }
+    AttestationRequest:
+      type: object
+      required: [subjectId, relyingPartyId, purpose, requiredAssuranceLevel, attributeNames]
+      properties:
+        subjectId: { type: string }
+        relyingPartyId: { type: string }
+        purpose: { type: string }
+        requiredAssuranceLevel:
+          type: string
+          enum: [IAL1, IAL2, IAL3]
+        attributeNames:
+          type: array
+          items: { type: string }
+        consentId: { type: string }
+    ScreeningSnapshot:
+      type: object
+      required: [id, subjectId, status, screenedAt]
+      properties:
+        id: { type: string }
+        subjectId: { type: string }
+        status:
+          type: string
+          enum: [clear, hit, inconclusive]
+        listsChecked:
+          type: array
+          items: { type: string }
+        screenedAt: { type: string, format: date-time }
+        validUntil: { type: string, format: date-time }
+    ScreeningSnapshotCreate:
+      type: object
+      required: [subjectId]
+      properties:
+        subjectId: { type: string }
+        listsChecked:
+          type: array
+          items: { type: string }
+    RefreshCycle:
+      type: object
+      required: [id, subjectId, dueAt, status]
+      properties:
+        id: { type: string }
+        subjectId: { type: string }
+        dueAt: { type: string, format: date-time }
+        status:
+          type: string
+          enum: [scheduled, completed, overdue]
+    LegalEntityLink:
+      type: object
+      required: [id, individualSubjectId, legalEntitySubjectId, role]
+      properties:
+        id: { type: string }
+        individualSubjectId: { type: string }
+        legalEntitySubjectId: { type: string }
+        role:
+          type: string
+          enum: [director, ubo, signatory]
+    DisputeCase:
+      type: object
+      required: [id, attestationId, status, openedAt]
+      properties:
+        id: { type: string }
+        attestationId: { type: string }
+        status:
+          type: string
+          enum: [open, investigating, upheld, rejected, closed]
+        reason: { type: string }
+        freezeDependentOnboardings: { type: boolean }
+        openedAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time }
+    DisputeCaseCreate:
+      type: object
+      required: [attestationId, reason]
+      properties:
+        attestationId: { type: string }
+        reason: { type: string }
+        freezeDependentOnboardings: { type: boolean, default: true }
+    FeeSchedule:
+      type: object
+      required: [id, identityProviderId, initiationFee, perAttestationFee]
+      properties:
+        id: { type: string }
+        identityProviderId: { type: string }
+        initiationFee: { type: number, format: double }
+        monthlyFee: { type: number, format: double }
+        perAttestationFee: { type: number, format: double }
+        currency: { type: string, default: USD }
+    SettlementInvoice:
+      type: object
+      required: [id, relyingPartyId, identityProviderId, period, amount, status]
+      properties:
+        id: { type: string }
+        relyingPartyId: { type: string }
+        identityProviderId: { type: string }
+        period: { type: string, example: "2026-08" }
+        amount: { type: number, format: double }
+        currency: { type: string }
+        attestationCount: { type: integer }
+        status:
+          type: string
+          enum: [open, paid, void]
+    NetworkMembership:
+      type: object
+      required: [id, memberId, memberType, status]
+      properties:
+        id: { type: string }
+        memberId: { type: string }
+        memberType:
+          type: string
+          enum: [identityProvider, relyingParty]
+        status:
+          type: string
+          enum: [active, suspended, pending]
+
+    DataEnvelopeIdentityProvider:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/IdentityProvider"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeIdentityProvider:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/IdentityProvider"
+            nextCursor: { type: string }
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+
+
+    DataEnvelopeRelyingParty:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/RelyingParty"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeRelyingParty:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/RelyingParty"
+            nextCursor: { type: string }
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+
+
+    DataEnvelopeAttributeRecord:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/AttributeRecord"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeAttributeRecord:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AttributeRecord"
+            nextCursor: { type: string }
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+
+
+    DataEnvelopeConsentGrant:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ConsentGrant"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeConsentGrant:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ConsentGrant"
+            nextCursor: { type: string }
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+
+
+    DataEnvelopeAttestation:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/Attestation"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeAttestation:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Attestation"
+            nextCursor: { type: string }
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+
+
+    DataEnvelopeScreeningSnapshot:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ScreeningSnapshot"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeScreeningSnapshot:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ScreeningSnapshot"
+            nextCursor: { type: string }
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+
+
+    DataEnvelopeDisputeCase:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/DisputeCase"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeDisputeCase:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/DisputeCase"
+            nextCursor: { type: string }
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+
+
+    DataEnvelopeFeeSchedule:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/FeeSchedule"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeFeeSchedule:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/FeeSchedule"
+            nextCursor: { type: string }
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+
+
+    DataEnvelopeSettlementInvoice:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/SettlementInvoice"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeSettlementInvoice:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/SettlementInvoice"
+            nextCursor: { type: string }
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+
