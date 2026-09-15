@@ -1,0 +1,102 @@
+openapi: 3.1.0
+info:
+  title: Attestations schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    AttestationId:
+      type: string
+      pattern: '^att_[0-9A-HJKMNP-TV-Z]{26}$'
+    Attestation:
+      type: object
+      required: [attestationId, subjectId, identityProviderId, relyingPartyId, assuranceLevel, status, liability, createdAt, updatedAt]
+      properties:
+        attestationId:
+          $ref: '#/components/schemas/AttestationId'
+        subjectId: { type: string }
+        identityProviderId: { type: string }
+        relyingPartyId: { type: string }
+        purpose: { type: string }
+        attributeNames:
+          type: array
+          items: { type: string }
+        assuranceLevel:
+          $ref: ./common/kyvora.yaml#/components/schemas/AssuranceLevel
+        status:
+          type: string
+          enum: [pending, issued, refused, expired, revoked, disputed]
+        liability:
+          $ref: ./common/kyvora.yaml#/components/schemas/LiabilityAllocation
+        screeningSnapshotId: { type: string }
+        consentId: { type: string }
+        issuedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        refuseReason: { type: string }
+        documentRecollectExceptionReason: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AttestationRequest:
+      type: object
+      required: [subjectId, relyingPartyId, purpose, requiredAssuranceLevel, attributeNames]
+      properties:
+        subjectId: { type: string }
+        relyingPartyId: { type: string }
+        identityProviderId: { type: string }
+        purpose: { type: string }
+        requiredAssuranceLevel:
+          $ref: ./common/kyvora.yaml#/components/schemas/AssuranceLevel
+        attributeNames:
+          type: array
+          items: { type: string }
+        consentId: { type: string }
+    AttestationIssue:
+      type: object
+      required: [liability, screeningSnapshotId, consentId]
+      properties:
+        liability:
+          $ref: ./common/kyvora.yaml#/components/schemas/LiabilityAllocation
+        screeningSnapshotId: { type: string }
+        consentId: { type: string }
+        attributeNames:
+          type: array
+          items: { type: string }
+        expiresAt: { type: string, format: date-time }
+    AttestationRefuse:
+      type: object
+      required: [refuseReason]
+      properties:
+        refuseReason: { type: string }
+    AttestationRevoke:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string }
+    DocumentRecollectException:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string }
+    AttestationResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Attestation'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    AttestationListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Attestation'
+            nextCursor: { type: string }
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

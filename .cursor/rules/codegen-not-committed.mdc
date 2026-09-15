@@ -1,0 +1,16 @@
+---
+description: Never commit or push .codegen — copy locally from the scaffold
+alwaysApply: true
+---
+
+# `.codegen` must not be committed
+
+- **Never** `git add`, commit, or push `.codegen/` (or nested `zero_codegen` tool trees).
+- The codegen tool is local-only. Collaborators copy it from `zero-apps-codegen-scaffold`:
+
+```bash
+rsync -a --exclude node_modules /path/to/zero-apps-codegen-scaffold/.codegen/ .codegen/
+```
+
+- `.gitignore` already lists `.codegen/` — do not force-add it.
+- Generated product code under `packages/` and `platform/` **is** committed; the Python tool under `.codegen/` is not.

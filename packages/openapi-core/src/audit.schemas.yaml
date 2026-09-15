@@ -1,0 +1,77 @@
+openapi: 3.1.0
+info:
+  title: Audit schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    PackId:
+      type: string
+      pattern: '^aud_[0-9A-HJKMNP-TV-Z]{26}$'
+    EvidencePack:
+      type: object
+      required: [packId, attestationId, status, artefacts, createdAt, updatedAt]
+      properties:
+        packId:
+          $ref: '#/components/schemas/PackId'
+        attestationId: { type: string }
+        subjectId: { type: string }
+        status:
+          type: string
+          enum: [complete, incomplete]
+        missingFields:
+          type: array
+          items: { type: string }
+        artefacts:
+          type: array
+          items: { type: string }
+        retentionUntil: { type: string, format: date-time }
+        downloadUri: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    EvidencePackGenerate:
+      type: object
+      required: [attestationId]
+      properties:
+        attestationId: { type: string }
+        subjectId: { type: string }
+    EvidencePackDownload:
+      type: object
+      required: [packId, downloadUri]
+      properties:
+        packId:
+          $ref: '#/components/schemas/PackId'
+        downloadUri: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    EvidencePackResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/EvidencePack'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    EvidencePackListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/EvidencePack'
+            nextCursor: { type: string }
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    EvidencePackDownloadResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/EvidencePackDownload'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

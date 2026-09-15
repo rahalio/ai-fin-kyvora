@@ -1,0 +1,196 @@
+openapi: 3.1.0
+info:
+  title: Kyvora Consents API
+  version: 0.1.0
+  description: |
+    Purpose-limited consent grants, secondary-use rejection, and revocation (BR-6, BR-12).
+  x-domain: cns
+  license:
+    name: Proprietary
+servers:
+  - url: https://api.kyvora.local
+security:
+  - apiKey: []
+  - bearerAuth: []
+tags:
+  - name: Consents
+    description: Consent grants and revocations
+x-codegen:
+  preserveOnClean:
+    - extensions
+
+paths:
+  /v1/consents:
+    get:
+      operationId: listConsentGrants
+      tags: [Consents]
+      summary: List consent grants for a subject or RP
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: subjectId
+          in: query
+          schema: { type: string }
+        - name: relyingPartyId
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, revoked, expired, rejected] }
+      responses:
+        '200':
+          description: Consents page
+          content:
+            application/json:
+              schema:
+                $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ConsentGrant
+      x-dynamodb:
+        entityType: "CONSENT_GRANT"
+        pkPatternTemplate: "CONSENT_GRANT#${consentId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: createConsentGrant
+      tags: [Consents]
+      summary: Grant purpose-limited consent (rejects secondary-use purposes)
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantCreate
+      responses:
+        '201':
+          description: Consent granted
+          content:
+            application/json:
+              schema:
+                $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ConsentGrant
+      x-dynamodb:
+        entityType: "CONSENT_GRANT"
+        pkPatternTemplate: "CONSENT_GRANT#${consentId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/consents/{consentId}:
+    get:
+      operationId: getConsentGrant
+      tags: [Consents]
+      summary: Get consent grant
+      parameters:
+        - name: consentId
+          in: path
+          required: true
+          schema:
+            $ref: ./consents.schemas.yaml#/components/schemas/ConsentId
+      responses:
+        '200':
+          description: Consent
+          content:
+            application/json:
+              schema:
+                $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ConsentGrant
+      x-dynamodb:
+        entityType: "CONSENT_GRANT"
+        pkPatternTemplate: "CONSENT_GRANT#${consentId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/consents/{consentId}/revoke:
+    post:
+      operationId: revokeConsentGrant
+      tags: [Consents]
+      summary: Revoke a sharing relationship
+      parameters:
+        - name: consentId
+          in: path
+          required: true
+          schema:
+            $ref: ./consents.schemas.yaml#/components/schemas/ConsentId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Consent revoked
+          content:
+            application/json:
+              schema:
+                $ref: ./consents.schemas.yaml#/components/schemas/ConsentGrantResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ConsentGrant
+      x-dynamodb:
+        entityType: "CONSENT_GRANT"
+        pkPatternTemplate: "CONSENT_GRANT#${consentId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+

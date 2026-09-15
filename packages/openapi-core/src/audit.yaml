@@ -1,0 +1,186 @@
+openapi: 3.1.0
+info:
+  title: Kyvora Audit API
+  version: 0.1.0
+  description: |
+    Supervisory evidence pack generation and download (BR-10).
+  x-domain: aud
+  license:
+    name: Proprietary
+servers:
+  - url: https://api.kyvora.local
+security:
+  - apiKey: []
+  - bearerAuth: []
+tags:
+  - name: EvidencePacks
+    description: Supervisory evidence packs
+x-codegen:
+  preserveOnClean:
+    - extensions
+
+paths:
+  /v1/audit/evidence-packs:
+    get:
+      operationId: listEvidencePacks
+      tags: [EvidencePacks]
+      summary: List evidence packs
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+      responses:
+        '200':
+          description: Evidence packs
+          content:
+            application/json:
+              schema:
+                $ref: ./audit.schemas.yaml#/components/schemas/EvidencePackListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: EvidencePack
+      x-dynamodb:
+        entityType: "EVIDENCE_PACK"
+        pkPatternTemplate: "EVIDENCE_PACK#${packId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: generateEvidencePack
+      tags: [EvidencePacks]
+      summary: Generate supervisory evidence pack for an onboarding/attestation
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./audit.schemas.yaml#/components/schemas/EvidencePackGenerate
+      responses:
+        '201':
+          description: Pack generated
+          content:
+            application/json:
+              schema:
+                $ref: ./audit.schemas.yaml#/components/schemas/EvidencePackResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: EvidencePack
+      x-dynamodb:
+        entityType: "EVIDENCE_PACK"
+        pkPatternTemplate: "EVIDENCE_PACK#${packId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/audit/evidence-packs/{packId}:
+    get:
+      operationId: getEvidencePack
+      tags: [EvidencePacks]
+      summary: Get evidence pack metadata and completeness
+      parameters:
+        - name: packId
+          in: path
+          required: true
+          schema:
+            $ref: ./audit.schemas.yaml#/components/schemas/PackId
+      responses:
+        '200':
+          description: Evidence pack
+          content:
+            application/json:
+              schema:
+                $ref: ./audit.schemas.yaml#/components/schemas/EvidencePackResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: EvidencePack
+      x-dynamodb:
+        entityType: "EVIDENCE_PACK"
+        pkPatternTemplate: "EVIDENCE_PACK#${packId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/audit/evidence-packs/{packId}/download:
+    get:
+      operationId: downloadEvidencePack
+      tags: [EvidencePacks]
+      summary: Download complete evidence pack (blocked if incomplete)
+      parameters:
+        - name: packId
+          in: path
+          required: true
+          schema:
+            $ref: ./audit.schemas.yaml#/components/schemas/PackId
+      responses:
+        '200':
+          description: Download descriptor
+          content:
+            application/json:
+              schema:
+                $ref: ./audit.schemas.yaml#/components/schemas/EvidencePackDownloadResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: EvidencePack
+      x-dynamodb:
+        entityType: "EVIDENCE_PACK"
+        pkPatternTemplate: "EVIDENCE_PACK#${packId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+

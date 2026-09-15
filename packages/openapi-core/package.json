@@ -1,0 +1,18 @@
+{
+  "name": "@kyvora/openapi-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenAPI contracts for Kyvora (common + identity + product domains)",
+  "scripts": {
+    "lint:domains": "redocly lint",
+    "bundle:domains": "mkdir -p src/.bundled && redocly bundle identity --output src/.bundled/identity.openapi.yaml && redocly bundle identity --output src/.bundled/identity.json && redocly bundle directory --output src/.bundled/directory.openapi.yaml && redocly bundle directory --output src/.bundled/directory.json && redocly bundle subjects --output src/.bundled/subjects.openapi.yaml && redocly bundle subjects --output src/.bundled/subjects.json && redocly bundle consents --output src/.bundled/consents.openapi.yaml && redocly bundle consents --output src/.bundled/consents.json && redocly bundle attestations --output src/.bundled/attestations.openapi.yaml && redocly bundle attestations --output src/.bundled/attestations.json && redocly bundle screening --output src/.bundled/screening.openapi.yaml && redocly bundle screening --output src/.bundled/screening.json && redocly bundle disputes --output src/.bundled/disputes.openapi.yaml && redocly bundle disputes --output src/.bundled/disputes.json && redocly bundle settlement --output src/.bundled/settlement.openapi.yaml && redocly bundle settlement --output src/.bundled/settlement.json && redocly bundle audit --output src/.bundled/audit.openapi.yaml && redocly bundle audit --output src/.bundled/audit.json",
+    "lint": "pnpm run lint:domains",
+    "bundle": "pnpm run bundle:domains"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.34.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

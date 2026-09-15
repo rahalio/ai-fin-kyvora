@@ -1,0 +1,124 @@
+openapi: 3.1.0
+info:
+  title: Settlement schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    ScheduleId:
+      type: string
+      pattern: '^fee_[0-9A-HJKMNP-TV-Z]{26}$'
+    InvoiceId:
+      type: string
+      pattern: '^inv_[0-9A-HJKMNP-TV-Z]{26}$'
+    FeeSchedule:
+      type: object
+      required: [scheduleId, identityProviderId, initiationFee, perAttestationFee, createdAt, updatedAt]
+      properties:
+        scheduleId:
+          $ref: '#/components/schemas/ScheduleId'
+        identityProviderId: { type: string }
+        initiationFee: { type: number, format: double }
+        monthlyFee: { type: number, format: double }
+        perAttestationFee: { type: number, format: double }
+        currency: { type: string, default: USD }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    FeeScheduleUpsert:
+      type: object
+      required: [identityProviderId, initiationFee, perAttestationFee]
+      properties:
+        identityProviderId: { type: string }
+        initiationFee: { type: number, format: double }
+        monthlyFee: { type: number, format: double }
+        perAttestationFee: { type: number, format: double }
+        currency: { type: string, default: USD }
+    SettlementInvoice:
+      type: object
+      required: [invoiceId, relyingPartyId, identityProviderId, period, amount, status, createdAt, updatedAt]
+      properties:
+        invoiceId:
+          $ref: '#/components/schemas/InvoiceId'
+        relyingPartyId: { type: string }
+        identityProviderId: { type: string }
+        period: { type: string }
+        amount: { type: number, format: double }
+        currency: { type: string }
+        attestationCount: { type: integer }
+        status:
+          type: string
+          enum: [open, paid, void]
+        exportUri: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    SettlementInvoiceGenerate:
+      type: object
+      required: [relyingPartyId, identityProviderId, period]
+      properties:
+        relyingPartyId: { type: string }
+        identityProviderId: { type: string }
+        period: { type: string }
+    SettlementInvoiceExport:
+      type: object
+      required: [invoiceId, exportUri, exportedAt]
+      properties:
+        invoiceId:
+          $ref: '#/components/schemas/InvoiceId'
+        exportUri: { type: string }
+        exportedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    FeeScheduleResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/FeeSchedule'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    FeeScheduleListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/FeeSchedule'
+            nextCursor: { type: string }
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    SettlementInvoiceResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/SettlementInvoice'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    SettlementInvoiceListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/SettlementInvoice'
+            nextCursor: { type: string }
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    SettlementInvoiceExportResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/SettlementInvoiceExport'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

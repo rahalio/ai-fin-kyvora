@@ -1,0 +1,78 @@
+openapi: 3.1.0
+info:
+  title: Screening schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    SnapshotId:
+      type: string
+      pattern: '^scr_[0-9A-HJKMNP-TV-Z]{26}$'
+    ScreeningSnapshot:
+      type: object
+      required: [snapshotId, subjectId, status, screenedAt, createdAt, updatedAt]
+      properties:
+        snapshotId:
+          $ref: '#/components/schemas/SnapshotId'
+        subjectId: { type: string }
+        status:
+          type: string
+          enum: [clear, hit, inconclusive, stale]
+        listsChecked:
+          type: array
+          items: { type: string }
+        screenedAt: { type: string, format: date-time }
+        validUntil: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ScreeningSnapshotCreate:
+      type: object
+      required: [subjectId]
+      properties:
+        subjectId: { type: string }
+        listsChecked:
+          type: array
+          items: { type: string }
+        validUntil: { type: string, format: date-time }
+    ScreeningInvalidation:
+      type: object
+      required: [snapshotId, invalidatedAttestationIds]
+      properties:
+        snapshotId:
+          $ref: '#/components/schemas/SnapshotId'
+        invalidatedAttestationIds:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ScreeningSnapshotResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ScreeningSnapshot'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ScreeningSnapshotListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ScreeningSnapshot'
+            nextCursor: { type: string }
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ScreeningInvalidationResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ScreeningInvalidation'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

@@ -1,0 +1,505 @@
+openapi: 3.1.0
+info:
+  title: Kyvora Directory API
+  version: 0.1.0
+  description: |
+    IdP and RP membership, certification, suspension, and auditable decision trail (BR-9).
+  x-domain: dir
+  license:
+    name: Proprietary
+servers:
+  - url: https://api.kyvora.local
+    description: Local API
+security:
+  - apiKey: []
+  - bearerAuth: []
+tags:
+  - name: IdentityProviders
+    description: Bank identity providers
+  - name: RelyingParties
+    description: Relying parties
+  - name: MembershipDecisions
+    description: Certify/suspend audit trail
+x-codegen:
+  preserveOnClean:
+    - extensions
+
+paths:
+  /v1/directory/identity-providers:
+    get:
+      operationId: listIdentityProviders
+      tags: [IdentityProviders]
+      summary: List identity providers
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: status
+          in: query
+          schema:
+            $ref: ./common/kyvora.yaml#/components/schemas/MemberStatus
+      responses:
+        '200':
+          description: IdP page
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/IdentityProviderListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: IdentityProvider
+      x-dynamodb:
+        entityType: "IDENTITY_PROVIDER"
+        pkPatternTemplate: "IDENTITY_PROVIDER#${idpId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: registerIdentityProvider
+      tags: [IdentityProviders]
+      summary: Register an identity provider
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./directory.schemas.yaml#/components/schemas/IdentityProviderCreate
+      responses:
+        '201':
+          description: IdP registered
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/IdentityProviderResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: IdentityProvider
+      x-dynamodb:
+        entityType: "IDENTITY_PROVIDER"
+        pkPatternTemplate: "IDENTITY_PROVIDER#${idpId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/directory/identity-providers/{idpId}:
+    get:
+      operationId: getIdentityProvider
+      tags: [IdentityProviders]
+      summary: Get identity provider
+      parameters:
+        - name: idpId
+          in: path
+          required: true
+          schema:
+            $ref: ./directory.schemas.yaml#/components/schemas/IdpId
+      responses:
+        '200':
+          description: IdP
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/IdentityProviderResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: IdentityProvider
+      x-dynamodb:
+        entityType: "IDENTITY_PROVIDER"
+        pkPatternTemplate: "IDENTITY_PROVIDER#${idpId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/directory/identity-providers/{idpId}/certify:
+    post:
+      operationId: certifyIdentityProvider
+      tags: [IdentityProviders]
+      summary: Certify an IdP against published standards
+      parameters:
+        - name: idpId
+          in: path
+          required: true
+          schema:
+            $ref: ./directory.schemas.yaml#/components/schemas/IdpId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./directory.schemas.yaml#/components/schemas/MembershipDecisionCreate
+      responses:
+        '200':
+          description: Certified
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/IdentityProviderResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: IdentityProvider
+      x-dynamodb:
+        entityType: "IDENTITY_PROVIDER"
+        pkPatternTemplate: "IDENTITY_PROVIDER#${idpId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/directory/identity-providers/{idpId}/suspend:
+    post:
+      operationId: suspendIdentityProvider
+      tags: [IdentityProviders]
+      summary: Suspend an IdP that breaches assurance standards
+      parameters:
+        - name: idpId
+          in: path
+          required: true
+          schema:
+            $ref: ./directory.schemas.yaml#/components/schemas/IdpId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./directory.schemas.yaml#/components/schemas/MembershipDecisionCreate
+      responses:
+        '202':
+          description: Suspended
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/IdentityProviderResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: IdentityProvider
+      x-dynamodb:
+        entityType: "IDENTITY_PROVIDER"
+        pkPatternTemplate: "IDENTITY_PROVIDER#${idpId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/directory/relying-parties:
+    get:
+      operationId: listRelyingParties
+      tags: [RelyingParties]
+      summary: List relying parties
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: status
+          in: query
+          schema:
+            $ref: ./common/kyvora.yaml#/components/schemas/MemberStatus
+      responses:
+        '200':
+          description: RP page
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/RelyingPartyListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: RelyingParty
+      x-dynamodb:
+        entityType: "RELYING_PARTY"
+        pkPatternTemplate: "RELYING_PARTY#${rpId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: registerRelyingParty
+      tags: [RelyingParties]
+      summary: Register a relying party
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./directory.schemas.yaml#/components/schemas/RelyingPartyCreate
+      responses:
+        '201':
+          description: RP registered
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/RelyingPartyResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: RelyingParty
+      x-dynamodb:
+        entityType: "RELYING_PARTY"
+        pkPatternTemplate: "RELYING_PARTY#${rpId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/directory/relying-parties/{rpId}:
+    get:
+      operationId: getRelyingParty
+      tags: [RelyingParties]
+      summary: Get relying party
+      parameters:
+        - name: rpId
+          in: path
+          required: true
+          schema:
+            $ref: ./directory.schemas.yaml#/components/schemas/RpId
+      responses:
+        '200':
+          description: RP
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/RelyingPartyResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: RelyingParty
+      x-dynamodb:
+        entityType: "RELYING_PARTY"
+        pkPatternTemplate: "RELYING_PARTY#${rpId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/directory/relying-parties/{rpId}/certify:
+    post:
+      operationId: certifyRelyingParty
+      tags: [RelyingParties]
+      summary: Certify a relying party
+      parameters:
+        - name: rpId
+          in: path
+          required: true
+          schema:
+            $ref: ./directory.schemas.yaml#/components/schemas/RpId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./directory.schemas.yaml#/components/schemas/MembershipDecisionCreate
+      responses:
+        '200':
+          description: Certified
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/RelyingPartyResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: RelyingParty
+      x-dynamodb:
+        entityType: "RELYING_PARTY"
+        pkPatternTemplate: "RELYING_PARTY#${rpId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/directory/relying-parties/{rpId}/suspend:
+    post:
+      operationId: suspendRelyingParty
+      tags: [RelyingParties]
+      summary: Suspend a relying party
+      parameters:
+        - name: rpId
+          in: path
+          required: true
+          schema:
+            $ref: ./directory.schemas.yaml#/components/schemas/RpId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./directory.schemas.yaml#/components/schemas/MembershipDecisionCreate
+      responses:
+        '202':
+          description: Suspended
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/RelyingPartyResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: RelyingParty
+      x-dynamodb:
+        entityType: "RELYING_PARTY"
+        pkPatternTemplate: "RELYING_PARTY#${rpId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/directory/membership-decisions:
+    get:
+      operationId: listMembershipDecisions
+      tags: [MembershipDecisions]
+      summary: List certify/suspend decisions
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: memberId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Decision trail
+          content:
+            application/json:
+              schema:
+                $ref: ./directory.schemas.yaml#/components/schemas/MembershipDecisionListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: MembershipDecision
+      x-dynamodb:
+        entityType: "MEMBERSHIP_DECISION"
+        pkPatternTemplate: "MEMBERSHIP_DECISION#${decisionId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth

@@ -1,0 +1,50 @@
+/**
+ * Kyvora API server — boots shared middleware + domain routes.
+ */
+
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import { registerSecurityMiddleware } from './lib/middleware/security-middleware.js';
+import { registerResponseEnvelope } from './lib/middleware/response-envelope.middleware.js';
+import { setupServerLifecycle, startServer } from './lib/server-startup.js';
+import { bootstrapInfrastructure } from './infrastructure/bootstrap.js';
+import { registerAllDomainRoutes } from './lib/routes/domain-routes.js';
+import { registerSystemRoutes } from './lib/routes/system-routes.js';
+import './lib/types/fastify-types.js';
+
+async function createApp() {
+  const fastify = Fastify({
+    logger: true,
+    requestIdHeader: 'x-request-id',
+    genReqId: () => crypto.randomUUID(),
+  });
+
+  await fastify.register(cors, {
+    origin: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'X-API-Key',
+      'Authorization',
+      'Idempotency-Key',
+    ],
+  });
+  await fastify.register(helmet, {
+    global: true,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  });
+
+  await bootstrapInfrastructure();
+  await registerSecurityMiddleware(fastify);
+  registerResponseEnvelope(fastify);
+  setupServerLifecycle(fastify);
+
+  registerSystemRoutes(fastify);
+  await registerAllDomainRoutes(fastify);
+
+  return fastify;
+}
+
+const app = await createApp();
+await startServer(app);

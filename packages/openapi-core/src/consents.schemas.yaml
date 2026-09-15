@@ -1,0 +1,63 @@
+openapi: 3.1.0
+info:
+  title: Consents schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    ConsentId:
+      type: string
+      pattern: '^cns_[0-9A-HJKMNP-TV-Z]{26}$'
+    ConsentGrant:
+      type: object
+      required: [consentId, subjectId, relyingPartyId, purpose, status, grantedAt, createdAt, updatedAt]
+      properties:
+        consentId:
+          $ref: '#/components/schemas/ConsentId'
+        subjectId: { type: string }
+        relyingPartyId: { type: string }
+        purpose: { type: string }
+        attributeNames:
+          type: array
+          items: { type: string }
+        status:
+          type: string
+          enum: [active, revoked, expired, rejected]
+        rejectReason: { type: string }
+        grantedAt: { type: string, format: date-time }
+        revokedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ConsentGrantCreate:
+      type: object
+      required: [subjectId, relyingPartyId, purpose, attributeNames]
+      properties:
+        subjectId: { type: string }
+        relyingPartyId: { type: string }
+        purpose: { type: string }
+        attributeNames:
+          type: array
+          items: { type: string }
+    ConsentGrantResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ConsentGrant'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ConsentGrantListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ConsentGrant'
+            nextCursor: { type: string }
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

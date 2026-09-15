@@ -1,0 +1,56 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "Bundler",
+    "lib": [
+      "ES2022"
+    ],
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@kyvora/core": [
+        "../../packages/core/src/index.ts"
+      ],
+      "@kyvora/core/*": [
+        "../../packages/core/src/*"
+      ],
+      "@kyvora/services": [
+        "../services/src/index.ts"
+      ],
+      "@kyvora/services/*": [
+        "../services/src/*"
+      ],
+      "@kyvora/adapters": [
+        "../adapters/src/index.ts"
+      ],
+      "@kyvora/adapters/*": [
+        "../adapters/src/*"
+      ],
+      "@services/*": [
+        "../services/src/*"
+      ],
+      "@adapters/*": [
+        "../adapters/src/*"
+      ],
+      "@api/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}

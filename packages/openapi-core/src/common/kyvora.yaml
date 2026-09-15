@@ -1,0 +1,34 @@
+openapi: 3.1.0
+info:
+  title: Kyvora shared value objects
+  version: 0.1.0
+  description: Assurance, liability, and membership enums shared across product domains.
+paths: {}
+components:
+  schemas:
+    AssuranceLevel:
+      type: string
+      enum: [IAL1, IAL2, IAL3]
+    MemberStatus:
+      type: string
+      enum: [active, suspended, pending]
+    LiabilityBearer:
+      type: string
+      enum: [identityProvider, relyingParty, subject]
+    LiabilityAllocation:
+      type: object
+      required: [bearer, ruleRef]
+      properties:
+        bearer:
+          $ref: '#/components/schemas/LiabilityBearer'
+        ruleRef:
+          type: string
+        notes:
+          type: string
+    CursorLimitMeta:
+      allOf:
+        - $ref: ./envelopes.yaml#/components/schemas/ResponseMeta
+        - type: object
+          properties:
+            pagination:
+              $ref: ./envelopes.yaml#/components/schemas/PageInfo

@@ -1,0 +1,160 @@
+openapi: 3.1.0
+info:
+  title: Directory schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    IdpId:
+      type: string
+      pattern: '^idp_[0-9A-HJKMNP-TV-Z]{26}$'
+    RpId:
+      type: string
+      pattern: '^rly_[0-9A-HJKMNP-TV-Z]{26}$'
+    DecisionId:
+      type: string
+      pattern: '^mbd_[0-9A-HJKMNP-TV-Z]{26}$'
+    IdentityProvider:
+      type: object
+      required: [idpId, legalName, status, maxAssuranceLevel, createdAt, updatedAt]
+      properties:
+        idpId:
+          $ref: '#/components/schemas/IdpId'
+        legalName: { type: string }
+        status:
+          $ref: ./common/kyvora.yaml#/components/schemas/MemberStatus
+        maxAssuranceLevel:
+          $ref: ./common/kyvora.yaml#/components/schemas/AssuranceLevel
+        jurisdictions:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    IdentityProviderCreate:
+      type: object
+      required: [legalName, maxAssuranceLevel]
+      properties:
+        legalName: { type: string }
+        maxAssuranceLevel:
+          $ref: ./common/kyvora.yaml#/components/schemas/AssuranceLevel
+        jurisdictions:
+          type: array
+          items: { type: string }
+    RelyingParty:
+      type: object
+      required: [rpId, legalName, status, allowedPurposes, createdAt, updatedAt]
+      properties:
+        rpId:
+          $ref: '#/components/schemas/RpId'
+        legalName: { type: string }
+        status:
+          $ref: ./common/kyvora.yaml#/components/schemas/MemberStatus
+        allowedPurposes:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    RelyingPartyCreate:
+      type: object
+      required: [legalName, allowedPurposes]
+      properties:
+        legalName: { type: string }
+        allowedPurposes:
+          type: array
+          items: { type: string }
+    MembershipDecision:
+      type: object
+      required: [decisionId, memberId, memberType, action, reason, decidedAt]
+      properties:
+        decisionId:
+          $ref: '#/components/schemas/DecisionId'
+        memberId: { type: string }
+        memberType:
+          type: string
+          enum: [identityProvider, relyingParty]
+        action:
+          type: string
+          enum: [certify, suspend, admit]
+        reason: { type: string }
+        rulebookVersion: { type: string }
+        decidedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    MembershipDecisionCreate:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string }
+        rulebookVersion: { type: string }
+    IdentityProviderResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/IdentityProvider'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    IdentityProviderListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/IdentityProvider'
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    RelyingPartyResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/RelyingParty'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    RelyingPartyListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/RelyingParty'
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    MembershipDecisionResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/MembershipDecision'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    MembershipDecisionListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/MembershipDecision'
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

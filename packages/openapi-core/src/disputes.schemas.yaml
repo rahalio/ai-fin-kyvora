@@ -1,0 +1,71 @@
+openapi: 3.1.0
+info:
+  title: Disputes schemas
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    DisputeId:
+      type: string
+      pattern: '^dsp_[0-9A-HJKMNP-TV-Z]{26}$'
+    DisputeCase:
+      type: object
+      required: [disputeId, attestationId, status, openedAt, freezeDependentOnboardings, createdAt, updatedAt]
+      properties:
+        disputeId:
+          $ref: '#/components/schemas/DisputeId'
+        attestationId: { type: string }
+        status:
+          type: string
+          enum: [open, investigating, upheld, rejected, closed]
+        reason: { type: string }
+        freezeDependentOnboardings: { type: boolean }
+        frozenOnboardingIds:
+          type: array
+          items: { type: string }
+        resolutionNotes: { type: string }
+        openedAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    DisputeCaseCreate:
+      type: object
+      required: [attestationId, reason]
+      properties:
+        attestationId: { type: string }
+        reason: { type: string }
+        freezeDependentOnboardings:
+          type: boolean
+          default: true
+    DisputeCaseResolve:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [upheld, rejected, closed]
+        resolutionNotes: { type: string }
+        revokeAttestation: { type: boolean }
+    DisputeCaseResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/DisputeCase'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DisputeCaseListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/DisputeCase'
+            nextCursor: { type: string }
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

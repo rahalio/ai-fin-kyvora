@@ -1,0 +1,538 @@
+openapi: 3.1.0
+info:
+  title: Kyvora Subjects API
+  version: 0.1.0
+  description: |
+    Identity subjects, verified attributes, legal-entity links, inclusion tiers, CDD refresh cycles (BR-5, BR-7, BR-8).
+  x-domain: sub
+  license:
+    name: Proprietary
+servers:
+  - url: https://api.kyvora.local
+security:
+  - apiKey: []
+  - bearerAuth: []
+tags:
+  - name: Subjects
+    description: Individuals and legal entities
+  - name: Attributes
+    description: Verified attributes with provenance
+  - name: LegalEntityLinks
+    description: Director/UBO edges
+  - name: RefreshCycles
+    description: Time-boxed CDD refresh
+x-codegen:
+  preserveOnClean:
+    - extensions
+
+paths:
+  /v1/subjects:
+    get:
+      operationId: listSubjects
+      tags: [Subjects]
+      summary: List identity subjects
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: subjectType
+          in: query
+          schema: { type: string, enum: [individual, legalEntity] }
+      responses:
+        '200':
+          description: Subjects page
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/IdentitySubjectListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: IdentitySubject
+      x-dynamodb:
+        entityType: "IDENTITY_SUBJECT"
+        pkPatternTemplate: "IDENTITY_SUBJECT#${subjectId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: createSubject
+      tags: [Subjects]
+      summary: Register an identity subject
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./subjects.schemas.yaml#/components/schemas/IdentitySubjectCreate
+      responses:
+        '201':
+          description: Subject created
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/IdentitySubjectResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: IdentitySubject
+      x-dynamodb:
+        entityType: "IDENTITY_SUBJECT"
+        pkPatternTemplate: "IDENTITY_SUBJECT#${subjectId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/subjects/{subjectId}:
+    get:
+      operationId: getSubject
+      tags: [Subjects]
+      summary: Get identity subject
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            $ref: ./subjects.schemas.yaml#/components/schemas/SubjectId
+      responses:
+        '200':
+          description: Subject
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/IdentitySubjectResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: IdentitySubject
+      x-dynamodb:
+        entityType: "IDENTITY_SUBJECT"
+        pkPatternTemplate: "IDENTITY_SUBJECT#${subjectId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    patch:
+      operationId: updateSubject
+      tags: [Subjects]
+      summary: Update subject inclusion tier or display ref
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            $ref: ./subjects.schemas.yaml#/components/schemas/SubjectId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./subjects.schemas.yaml#/components/schemas/IdentitySubjectUpdate
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/IdentitySubjectResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: IdentitySubject
+      x-dynamodb:
+        entityType: "IDENTITY_SUBJECT"
+        pkPatternTemplate: "IDENTITY_SUBJECT#${subjectId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/subjects/{subjectId}/attributes:
+    get:
+      operationId: listSubjectAttributes
+      tags: [Attributes]
+      summary: List verified attributes (IdP-scoped, not a network honeypot)
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            $ref: ./subjects.schemas.yaml#/components/schemas/SubjectId
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+      responses:
+        '200':
+          description: Attributes
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/AttributeRecordListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: AttributeRecord
+      x-dynamodb:
+        entityType: "ATTRIBUTE_RECORD"
+        pkPatternTemplate: "ATTRIBUTE_RECORD#${attributeId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: registerSubjectAttribute
+      tags: [Attributes]
+      summary: Register a verified attribute
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            $ref: ./subjects.schemas.yaml#/components/schemas/SubjectId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./subjects.schemas.yaml#/components/schemas/AttributeRecordCreate
+      responses:
+        '201':
+          description: Attribute registered
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/AttributeRecordResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: AttributeRecord
+      x-dynamodb:
+        entityType: "ATTRIBUTE_RECORD"
+        pkPatternTemplate: "ATTRIBUTE_RECORD#${attributeId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/subjects/{subjectId}/legal-entity-links:
+    get:
+      operationId: listLegalEntityLinks
+      tags: [LegalEntityLinks]
+      summary: List director/UBO links
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            $ref: ./subjects.schemas.yaml#/components/schemas/SubjectId
+      responses:
+        '200':
+          description: Links
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/LegalEntityLinkListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: LegalEntityLink
+      x-dynamodb:
+        entityType: "LEGAL_ENTITY_LINK"
+        pkPatternTemplate: "LEGAL_ENTITY_LINK#${linkId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: createLegalEntityLink
+      tags: [LegalEntityLinks]
+      summary: Link an individual to a legal entity
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            $ref: ./subjects.schemas.yaml#/components/schemas/SubjectId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./subjects.schemas.yaml#/components/schemas/LegalEntityLinkCreate
+      responses:
+        '201':
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/LegalEntityLinkResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: LegalEntityLink
+      x-dynamodb:
+        entityType: "LEGAL_ENTITY_LINK"
+        pkPatternTemplate: "LEGAL_ENTITY_LINK#${linkId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/legal-entity-links/{linkId}:
+    delete:
+      operationId: unlinkLegalEntity
+      tags: [LegalEntityLinks]
+      summary: Unlink with audit
+      parameters:
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            $ref: ./subjects.schemas.yaml#/components/schemas/LinkId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '204':
+          description: Unlinked
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: LegalEntityLink
+      x-dynamodb:
+        entityType: "LEGAL_ENTITY_LINK"
+        pkPatternTemplate: "LEGAL_ENTITY_LINK#${linkId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/refresh-cycles:
+    get:
+      operationId: listRefreshCycles
+      tags: [RefreshCycles]
+      summary: List CDD refresh cycles
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: status
+          in: query
+          schema: { type: string, enum: [scheduled, completed, overdue] }
+      responses:
+        '200':
+          description: Refresh cycles
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/RefreshCycleListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: RefreshCycle
+      x-dynamodb:
+        entityType: "REFRESH_CYCLE"
+        pkPatternTemplate: "REFRESH_CYCLE#${cycleId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: createRefreshCycle
+      tags: [RefreshCycles]
+      summary: Schedule a refresh cycle
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./subjects.schemas.yaml#/components/schemas/RefreshCycleCreate
+      responses:
+        '201':
+          description: Scheduled
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/RefreshCycleResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: RefreshCycle
+      x-dynamodb:
+        entityType: "REFRESH_CYCLE"
+        pkPatternTemplate: "REFRESH_CYCLE#${cycleId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/refresh-cycles/{cycleId}/complete:
+    post:
+      operationId: completeRefreshCycle
+      tags: [RefreshCycles]
+      summary: Complete or force re-verify
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            $ref: ./subjects.schemas.yaml#/components/schemas/CycleId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: ./subjects.schemas.yaml#/components/schemas/RefreshCycleComplete
+      responses:
+        '200':
+          description: Completed
+          content:
+            application/json:
+              schema:
+                $ref: ./subjects.schemas.yaml#/components/schemas/RefreshCycleResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: RefreshCycle
+      x-dynamodb:
+        entityType: "REFRESH_CYCLE"
+        pkPatternTemplate: "REFRESH_CYCLE#${cycleId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+

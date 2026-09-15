@@ -1,0 +1,196 @@
+openapi: 3.1.0
+info:
+  title: Kyvora Disputes API
+  version: 0.1.0
+  description: |
+    Incorrect-attribute disputes, dependent onboarding freeze, and resolution (BR-10).
+  x-domain: dsp
+  license:
+    name: Proprietary
+servers:
+  - url: https://api.kyvora.local
+security:
+  - apiKey: []
+  - bearerAuth: []
+tags:
+  - name: Disputes
+    description: Dispute cases and freezes
+x-codegen:
+  preserveOnClean:
+    - extensions
+
+paths:
+  /v1/disputes:
+    get:
+      operationId: listDisputeCases
+      tags: [Disputes]
+      summary: List dispute cases
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, investigating, upheld, rejected, closed] }
+      responses:
+        '200':
+          description: Disputes page
+          content:
+            application/json:
+              schema:
+                $ref: ./disputes.schemas.yaml#/components/schemas/DisputeCaseListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: DisputeCase
+      x-dynamodb:
+        entityType: "DISPUTE_CASE"
+        pkPatternTemplate: "DISPUTE_CASE#${disputeId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: openDisputeCase
+      tags: [Disputes]
+      summary: Open dispute and freeze dependent onboardings
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./disputes.schemas.yaml#/components/schemas/DisputeCaseCreate
+      responses:
+        '201':
+          description: Dispute opened
+          content:
+            application/json:
+              schema:
+                $ref: ./disputes.schemas.yaml#/components/schemas/DisputeCaseResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: DisputeCase
+      x-dynamodb:
+        entityType: "DISPUTE_CASE"
+        pkPatternTemplate: "DISPUTE_CASE#${disputeId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/disputes/{disputeId}:
+    get:
+      operationId: getDisputeCase
+      tags: [Disputes]
+      summary: Get dispute case
+      parameters:
+        - name: disputeId
+          in: path
+          required: true
+          schema:
+            $ref: ./disputes.schemas.yaml#/components/schemas/DisputeId
+      responses:
+        '200':
+          description: Dispute
+          content:
+            application/json:
+              schema:
+                $ref: ./disputes.schemas.yaml#/components/schemas/DisputeCaseResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: DisputeCase
+      x-dynamodb:
+        entityType: "DISPUTE_CASE"
+        pkPatternTemplate: "DISPUTE_CASE#${disputeId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/disputes/{disputeId}/resolve:
+    post:
+      operationId: resolveDisputeCase
+      tags: [Disputes]
+      summary: Resolve dispute (uphold/reject/close) and optionally revoke attestation
+      parameters:
+        - name: disputeId
+          in: path
+          required: true
+          schema:
+            $ref: ./disputes.schemas.yaml#/components/schemas/DisputeId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./disputes.schemas.yaml#/components/schemas/DisputeCaseResolve
+      responses:
+        '200':
+          description: Resolved
+          content:
+            application/json:
+              schema:
+                $ref: ./disputes.schemas.yaml#/components/schemas/DisputeCaseResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: DisputeCase
+      x-dynamodb:
+        entityType: "DISPUTE_CASE"
+        pkPatternTemplate: "DISPUTE_CASE#${disputeId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+

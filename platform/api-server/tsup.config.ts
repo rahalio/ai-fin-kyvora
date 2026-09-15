@@ -1,0 +1,31 @@
+import { defineConfig } from 'tsup';
+
+export default defineConfig({
+  entry: ['src/index.ts'],
+  format: ['esm'],
+  target: 'node20',
+  outDir: 'dist',
+  clean: true,
+  sourcemap: true,
+  dts: false,
+  splitting: false,
+  bundle: true,
+  platform: 'node',
+  external: [
+    '@kyvora/core',
+    '@kyvora/services',
+    '@kyvora/adapters',
+    'fastify',
+    '@fastify/cors',
+    '@fastify/helmet',
+    '@fastify/jwt',
+    'dotenv',
+    'jsonwebtoken',
+    'zod',
+    '@zodios/core',
+    '@aws-sdk/client-dynamodb',
+    '@aws-sdk/lib-dynamodb',
+    '@aws-sdk/credential-providers',
+    '@aws-sdk/types',
+  ],
+});

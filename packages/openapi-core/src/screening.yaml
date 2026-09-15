@@ -1,0 +1,190 @@
+openapi: 3.1.0
+info:
+  title: Kyvora Screening API
+  version: 0.1.0
+  description: |
+    Sanctions/PEP screening freshness snapshots and stale invalidation (BR-11).
+  x-domain: scr
+  license:
+    name: Proprietary
+servers:
+  - url: https://api.kyvora.local
+security:
+  - apiKey: []
+  - bearerAuth: []
+tags:
+  - name: Screening
+    description: Screening freshness
+x-codegen:
+  preserveOnClean:
+    - extensions
+
+paths:
+  /v1/screening/snapshots:
+    get:
+      operationId: listScreeningSnapshots
+      tags: [Screening]
+      summary: List screening snapshots
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: subjectId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Snapshots page
+          content:
+            application/json:
+              schema:
+                $ref: ./screening.schemas.yaml#/components/schemas/ScreeningSnapshotListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ScreeningSnapshot
+      x-dynamodb:
+        entityType: "SCREENING_SNAPSHOT"
+        pkPatternTemplate: "SCREENING_SNAPSHOT#${snapshotId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: refreshScreeningSnapshot
+      tags: [Screening]
+      summary: Capture a fresh screening snapshot
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./screening.schemas.yaml#/components/schemas/ScreeningSnapshotCreate
+      responses:
+        '201':
+          description: Snapshot captured
+          content:
+            application/json:
+              schema:
+                $ref: ./screening.schemas.yaml#/components/schemas/ScreeningSnapshotResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ScreeningSnapshot
+      x-dynamodb:
+        entityType: "SCREENING_SNAPSHOT"
+        pkPatternTemplate: "SCREENING_SNAPSHOT#${snapshotId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/screening/snapshots/{snapshotId}:
+    get:
+      operationId: getScreeningSnapshot
+      tags: [Screening]
+      summary: Get screening snapshot
+      parameters:
+        - name: snapshotId
+          in: path
+          required: true
+          schema:
+            $ref: ./screening.schemas.yaml#/components/schemas/SnapshotId
+      responses:
+        '200':
+          description: Snapshot
+          content:
+            application/json:
+              schema:
+                $ref: ./screening.schemas.yaml#/components/schemas/ScreeningSnapshotResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ScreeningSnapshot
+      x-dynamodb:
+        entityType: "SCREENING_SNAPSHOT"
+        pkPatternTemplate: "SCREENING_SNAPSHOT#${snapshotId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/screening/snapshots/{snapshotId}/invalidate-dependents:
+    post:
+      operationId: invalidateStaleScreeningDependents
+      tags: [Screening]
+      summary: Invalidate attestations dependent on a stale screening snapshot
+      parameters:
+        - name: snapshotId
+          in: path
+          required: true
+          schema:
+            $ref: ./screening.schemas.yaml#/components/schemas/SnapshotId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Dependents invalidated
+          content:
+            application/json:
+              schema:
+                $ref: ./screening.schemas.yaml#/components/schemas/ScreeningInvalidationResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ScreeningSnapshot
+      x-dynamodb:
+        entityType: "SCREENING_SNAPSHOT"
+        pkPatternTemplate: "SCREENING_SNAPSHOT#${snapshotId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+

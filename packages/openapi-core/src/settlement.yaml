@@ -1,0 +1,311 @@
+openapi: 3.1.0
+info:
+  title: Kyvora Settlement API
+  version: 0.1.0
+  description: |
+    Identity-as-a-Service fee schedules, invoices, and export (BR-4).
+  x-domain: stl
+  license:
+    name: Proprietary
+servers:
+  - url: https://api.kyvora.local
+security:
+  - apiKey: []
+  - bearerAuth: []
+tags:
+  - name: FeeSchedules
+    description: IdP fee schedules
+  - name: Invoices
+    description: Settlement invoices
+x-codegen:
+  preserveOnClean:
+    - extensions
+
+paths:
+  /v1/settlement/fee-schedules:
+    get:
+      operationId: listFeeSchedules
+      tags: [FeeSchedules]
+      summary: List fee schedules
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: identityProviderId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Fee schedules
+          content:
+            application/json:
+              schema:
+                $ref: ./settlement.schemas.yaml#/components/schemas/FeeScheduleListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: FeeSchedule
+      x-dynamodb:
+        entityType: "FEE_SCHEDULE"
+        pkPatternTemplate: "FEE_SCHEDULE#${scheduleId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: upsertFeeSchedule
+      tags: [FeeSchedules]
+      summary: Create or update fee schedule
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./settlement.schemas.yaml#/components/schemas/FeeScheduleUpsert
+      responses:
+        '201':
+          description: Fee schedule saved
+          content:
+            application/json:
+              schema:
+                $ref: ./settlement.schemas.yaml#/components/schemas/FeeScheduleResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: FeeSchedule
+      x-dynamodb:
+        entityType: "FEE_SCHEDULE"
+        pkPatternTemplate: "FEE_SCHEDULE#${scheduleId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/settlement/fee-schedules/{scheduleId}:
+    get:
+      operationId: getFeeSchedule
+      tags: [FeeSchedules]
+      summary: Get fee schedule
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            $ref: ./settlement.schemas.yaml#/components/schemas/ScheduleId
+      responses:
+        '200':
+          description: Fee schedule
+          content:
+            application/json:
+              schema:
+                $ref: ./settlement.schemas.yaml#/components/schemas/FeeScheduleResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: FeeSchedule
+      x-dynamodb:
+        entityType: "FEE_SCHEDULE"
+        pkPatternTemplate: "FEE_SCHEDULE#${scheduleId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/settlement/invoices:
+    get:
+      operationId: listSettlementInvoices
+      tags: [Invoices]
+      summary: List settlement invoices
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, paid, void] }
+      responses:
+        '200':
+          description: Invoices page
+          content:
+            application/json:
+              schema:
+                $ref: ./settlement.schemas.yaml#/components/schemas/SettlementInvoiceListResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: SettlementInvoice
+      x-dynamodb:
+        entityType: "SETTLEMENT_INVOICE"
+        pkPatternTemplate: "SETTLEMENT_INVOICE#${invoiceId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+    post:
+      operationId: generateSettlementInvoice
+      tags: [Invoices]
+      summary: Generate an IaaS settlement invoice for a period
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./settlement.schemas.yaml#/components/schemas/SettlementInvoiceGenerate
+      responses:
+        '201':
+          description: Invoice generated
+          content:
+            application/json:
+              schema:
+                $ref: ./settlement.schemas.yaml#/components/schemas/SettlementInvoiceResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: SettlementInvoice
+      x-dynamodb:
+        entityType: "SETTLEMENT_INVOICE"
+        pkPatternTemplate: "SETTLEMENT_INVOICE#${invoiceId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/settlement/invoices/{invoiceId}:
+    get:
+      operationId: getSettlementInvoice
+      tags: [Invoices]
+      summary: Get settlement invoice
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: ./settlement.schemas.yaml#/components/schemas/InvoiceId
+      responses:
+        '200':
+          description: Invoice
+          content:
+            application/json:
+              schema:
+                $ref: ./settlement.schemas.yaml#/components/schemas/SettlementInvoiceResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: SettlementInvoice
+      x-dynamodb:
+        entityType: "SETTLEMENT_INVOICE"
+        pkPatternTemplate: "SETTLEMENT_INVOICE#${invoiceId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+  /v1/settlement/invoices/{invoiceId}/export:
+    post:
+      operationId: exportSettlementInvoice
+      tags: [Invoices]
+      summary: Export invoice for ERP recognition
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: ./settlement.schemas.yaml#/components/schemas/InvoiceId
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Export payload
+          content:
+            application/json:
+              schema:
+                $ref: ./settlement.schemas.yaml#/components/schemas/SettlementInvoiceExportResponse
+        '400':
+          $ref: ./common/responses.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: SettlementInvoice
+      x-dynamodb:
+        entityType: "SETTLEMENT_INVOICE"
+        pkPatternTemplate: "SETTLEMENT_INVOICE#${invoiceId}"
+        skPatternTemplate: "METADATA"
+        pkPattern: entity
+        usePkQuery: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        softDeleteEnabled: false
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+

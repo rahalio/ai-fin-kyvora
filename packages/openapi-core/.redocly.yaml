@@ -1,0 +1,36 @@
+apis:
+  identity:
+    root: src/identity.yaml
+  directory:
+    root: src/directory.yaml
+  subjects:
+    root: src/subjects.yaml
+  consents:
+    root: src/consents.yaml
+  attestations:
+    root: src/attestations.yaml
+  screening:
+    root: src/screening.yaml
+  disputes:
+    root: src/disputes.yaml
+  settlement:
+    root: src/settlement.yaml
+  audit:
+    root: src/audit.yaml
+
+extends:
+  - recommended
+
+rules:
+  no-unused-components: off
+  operation-4xx-response: warn
+  info-license: off
+  info-license-url: off
+  tag-description: off
+  operation-operationId: error
+  no-invalid-media-type-examples: off
+
+theme:
+  openapi:
+    generateCodeSamples:
+      languages: []
